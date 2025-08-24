@@ -347,5 +347,72 @@ def delete_meal_plan(plan_id):
     
     return redirect(url_for('meal_plans'))
 
+@app.route('/shopping-list')
+def general_shopping_list():
+    """General shopping list accessible from menu"""
+    shopping_items_with_details = []
+    
+    for shopping_item in data_store.shopping_list.values():
+        item = data_store.items.get(shopping_item['item_id'])
+        if item:
+            shopping_items_with_details.append({
+                **shopping_item,
+                'item_name': item['name'],
+                'item_category': item['category']
+            })
+    
+    # Group by category
+    categories = {}
+    for item in shopping_items_with_details:
+        category = item['item_category']
+        if category not in categories:
+            categories[category] = []
+        categories[category].append(item)
+    
+    return render_template('general_shopping_list.html',
+                         categories=categories,
+                         total_items=len(shopping_items_with_details),
+                         items=data_store.items.values())
+
+@app.route('/shopping-list/add', methods=['POST'])
+def add_shopping_item():
+    """Add item to general shopping list"""
+    item_id = request.form.get('item_id')
+    quantity = request.form.get('quantity', type=float)
+    unit = request.form.get('unit', '').strip()
+    notes = request.form.get('notes', '').strip()
+    
+    if not all([item_id, quantity, unit]):
+        flash('Artikel, Menge und Einheit sind erforderlich', 'error')
+    else:
+        data_store.add_shopping_item(item_id, quantity, unit, notes)
+        flash('Artikel zur Einkaufsliste hinzugefügt', 'success')
+    
+    return redirect(url_for('general_shopping_list'))
+
+@app.route('/shopping-list/remove/<shopping_item_id>', methods=['POST'])
+def remove_shopping_item(shopping_item_id):
+    """Remove item from general shopping list"""
+    if data_store.remove_shopping_item(shopping_item_id):
+        flash('Artikel entfernt', 'success')
+    else:
+        flash('Artikel nicht gefunden', 'error')
+    
+    return redirect(url_for('general_shopping_list'))
+
+@app.route('/shopping-list/toggle/<shopping_item_id>', methods=['POST'])
+def toggle_shopping_item(shopping_item_id):
+    """Toggle checked status of shopping item"""
+    if data_store.toggle_shopping_item(shopping_item_id):
+        return {'success': True}
+    return {'success': False}, 400
+
+@app.route('/shopping-list/clear-checked', methods=['POST'])
+def clear_checked_items():
+    """Clear all checked items"""
+    count = data_store.clear_checked_shopping_items()
+    flash(f'{count} erledigte Artikel entfernt', 'success')
+    return redirect(url_for('general_shopping_list'))
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

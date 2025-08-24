@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+
+{% block title %}Einkaufsliste - Meal Planner{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+                <h1>
+                    <i data-feather="shopping-cart" class="me-2"></i>
+                    Einkaufsliste
+                </h1>
+                <p class="text-muted">
+                    Deine persönliche Einkaufsliste für alle Bedürfnisse
+                </p>
+            </div>
+            <div class="btn-group" role="group">
+                <div class="form-check form-switch me-3">
+                    <input class="form-check-input" type="checkbox" id="shoppingMode" onchange="toggleShoppingMode()">
+                    <label class="form-check-label" for="shoppingMode">
+                        <i data-feather="shopping-bag" class="me-1"></i>
+                        Beim Einkaufen
+                    </label>
+                </div>
+                {% if categories %}
+                <button type="button" class="btn btn-outline-warning" onclick="clearCheckedItems()">
+                    <i data-feather="trash-2" class="me-2"></i>
+                    Erledigte entfernen
+                </button>
+                {% endif %}
+                <button onclick="window.print()" class="btn btn-outline-primary">
+                    <i data-feather="printer" class="me-2"></i>
+                    Drucken
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Item Form -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="plus" class="me-2"></i>
+                    Artikel hinzufügen
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('add_shopping_item') }}">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="item_id" class="form-label">Artikel</label>
+                            <select class="form-select item-select" id="item_id" name="item_id" 
+                                    onchange="updateUnitForShoppingItem(this)" required>
+                                <option value="">Artikel wählen...</option>
+                                {% for item in items %}
+                                    <option value="{{ item.id }}">{{ item.name }} ({{ item.category }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label for="quantity" class="form-label">Menge</label>
+                            <input type="number" class="form-control" id="quantity" name="quantity" 
+                                   step="0.1" min="0" placeholder="Menge" required>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label for="unit" class="form-label">Einheit</label>
+                            <input type="text" class="form-control shopping-unit" id="unit" name="unit" 
+                                   placeholder="Einheit" required>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="notes" class="form-label">Notizen</label>
+                            <input type="text" class="form-control" id="notes" name="notes" 
+                                   placeholder="Optional">
+                        </div>
+                        <div class="col-md-1 mb-3">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="submit" class="btn btn-primary d-block">
+                                <i data-feather="plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <h3 class="text-primary">{{ total_items }}</h3>
+                        <p class="mb-0">Artikel insgesamt</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h3 class="text-success">{{ categories|length }}</h3>
+                        <p class="mb-0">Kategorien</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h3 class="text-warning" id="checkedCount">0</h3>
+                        <p class="mb-0">Erledigt</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- List View -->
+<div id="listView" class="row">
+    {% if categories %}
+        {% for category, items in categories.items() %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i data-feather="{% if category == 'Fleisch' %}heart{% elif category == 'Gemüse' %}star{% elif category == 'Milchprodukte' %}droplet{% elif category == 'Haushalt' %}home{% else %}package{% endif %}" class="me-2"></i>
+                        {{ category }}
+                        <span class="badge bg-secondary ms-2">{{ items|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for item in items %}
+                    <div class="form-check d-flex align-items-start mb-2 shopping-item-row" 
+                         data-item-id="{{ item.id }}">
+                        <input class="form-check-input me-2 mt-1" type="checkbox" 
+                               id="item_{{ item.id }}"
+                               {% if item.checked %}checked{% endif %}
+                               onchange="toggleItem('{{ item.id }}')">
+                        <div class="flex-grow-1">
+                            <label class="form-check-label w-100" for="item_{{ item.id }}">
+                                <div class="d-flex justify-content-between">
+                                    <span class="fw-bold item-name">{{ item.item_name }}</span>
+                                    <span class="text-primary item-quantity">{{ item.quantity }} {{ item.unit }}</span>
+                                </div>
+                                {% if item.notes %}
+                                <small class="text-muted">{{ item.notes }}</small>
+                                {% endif %}
+                            </label>
+                        </div>
+                        <button type="button" class="btn btn-outline-danger btn-sm ms-2" 
+                                onclick="removeItem('{{ item.id }}')">
+                            <i data-feather="trash-2"></i>
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i data-feather="shopping-cart" class="mb-3" style="width: 48px; height: 48px;"></i>
+                    <h5>Einkaufsliste ist leer</h5>
+                    <p class="text-muted">
+                        Füge Artikel hinzu, um deine Einkaufsliste zu erstellen.
+                    </p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Shopping Mode View -->
+<div id="shoppingView" class="row" style="display: none;">
+    {% if categories %}
+        {% for category, items in categories.items() %}
+        <div class="col-12 mb-4">
+            <h5>
+                <i data-feather="{% if category == 'Fleisch' %}heart{% elif category == 'Gemüse' %}star{% elif category == 'Milchprodukte' %}droplet{% elif category == 'Haushalt' %}home{% else %}package{% endif %}" class="me-2"></i>
+                {{ category }}
+                <span class="badge bg-secondary ms-2">{{ items|length }}</span>
+            </h5>
+            <div class="row">
+                {% for item in items %}
+                <div class="col-md-3 col-lg-2 mb-3">
+                    <div class="card shopping-card h-100 {{ 'checked' if item.checked }}" 
+                         data-item-id="{{ item.id }}" onclick="toggleItemCard('{{ item.id }}')">
+                        <div class="card-body text-center p-3">
+                            <div class="shopping-check-overlay">
+                                <i data-feather="check" class="text-success"></i>
+                            </div>
+                            <h6 class="card-title mb-2">{{ item.item_name }}</h6>
+                            <p class="card-text mb-1">
+                                <strong>{{ item.quantity }} {{ item.unit }}</strong>
+                            </p>
+                            {% if item.notes %}
+                            <small class="text-muted">{{ item.notes }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    {% endif %}
+</div>
+
+<script>
+// Item data with default units for form
+const itemsData = {
+    {% for item in items %}
+    '{{ item.id }}': {
+        name: '{{ item.name }}',
+        category: '{{ item.category }}',
+        defaultUnit: '{{ item.default_unit }}'
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+};
+
+function updateUnitForShoppingItem(selectElement) {
+    const itemId = selectElement.value;
+    if (itemId && itemsData[itemId]) {
+        const unitInput = document.querySelector('.shopping-unit');
+        if (unitInput) {
+            unitInput.value = itemsData[itemId].defaultUnit;
+        }
+    }
+}
+
+function toggleShoppingMode() {
+    const isShoppingMode = document.getElementById('shoppingMode').checked;
+    const listView = document.getElementById('listView');
+    const shoppingView = document.getElementById('shoppingView');
+    
+    if (isShoppingMode) {
+        listView.style.display = 'none';
+        shoppingView.style.display = 'block';
+    } else {
+        listView.style.display = 'block';
+        shoppingView.style.display = 'none';
+    }
+}
+
+async function toggleItem(itemId) {
+    try {
+        const response = await fetch(`/shopping-list/toggle/${itemId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        if (response.ok) {
+            updateCheckedCount();
+            
+            // Update shopping card view if in shopping mode
+            const shoppingCard = document.querySelector(`.shopping-card[data-item-id="${itemId}"]`);
+            if (shoppingCard) {
+                const checkbox = document.getElementById(`item_${itemId}`);
+                if (checkbox.checked) {
+                    shoppingCard.classList.add('checked');
+                } else {
+                    shoppingCard.classList.remove('checked');
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error toggling item:', error);
+    }
+}
+
+function toggleItemCard(itemId) {
+    const checkbox = document.getElementById(`item_${itemId}`);
+    if (checkbox) {
+        checkbox.checked = !checkbox.checked;
+        toggleItem(itemId);
+    }
+}
+
+function removeItem(itemId) {
+    if (confirm('Artikel wirklich entfernen?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/shopping-list/remove/${itemId}`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function clearCheckedItems() {
+    if (confirm('Alle erledigten Artikel entfernen?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/shopping-list/clear-checked';
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function updateCheckedCount() {
+    const checkedItems = document.querySelectorAll('.shopping-item-row input[type="checkbox"]:checked').length;
+    document.getElementById('checkedCount').textContent = checkedItems;
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    updateCheckedCount();
+    feather.replace();
+});
+</script>
+
+<style>
+.shopping-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    opacity: 1;
+}
+
+.shopping-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.shopping-card.checked {
+    opacity: 0.6;
+    background-color: rgba(var(--bs-success-rgb), 0.1);
+}
+
+.shopping-check-overlay {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: rgba(var(--bs-success-rgb), 0.9);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.shopping-card.checked .shopping-check-overlay {
+    display: flex;
+}
+
+.shopping-card.checked .card-title,
+.shopping-card.checked .card-text {
+    text-decoration: line-through;
+}
+
+.shopping-item-row input:checked + .flex-grow-1 label {
+    opacity: 0.6;
+    text-decoration: line-through;
+}
+
+@media print {
+    .btn, .form-check-input, .shopping-check-overlay {
+        display: none !important;
+    }
+    
+    #shoppingView {
+        display: none !important;
+    }
+    
+    #listView {
+        display: block !important;
+    }
+}
+</style>
+{% endblock %}

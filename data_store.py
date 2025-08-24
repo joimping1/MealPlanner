@@ -9,6 +9,7 @@ class DataStore:
         self.items: Dict[str, dict] = {}
         self.recipes: Dict[str, dict] = {}
         self.meal_plans: Dict[str, dict] = {}
+        self.shopping_list: Dict[str, dict] = {}
         
         # Initialize with some basic food categories and items
         self._initialize_sample_data()
@@ -146,3 +147,38 @@ class DataStore:
             del self.meal_plans[plan_id]
             return True
         return False
+    
+    def add_shopping_item(self, item_id: str, quantity: float, unit: str, notes: str = '') -> str:
+        """Add item to general shopping list"""
+        shopping_item_id = str(uuid.uuid4())
+        self.shopping_list[shopping_item_id] = {
+            'id': shopping_item_id,
+            'item_id': item_id,
+            'quantity': quantity,
+            'unit': unit,
+            'notes': notes,
+            'checked': False,
+            'created_at': datetime.now()
+        }
+        return shopping_item_id
+    
+    def remove_shopping_item(self, shopping_item_id: str) -> bool:
+        """Remove item from general shopping list"""
+        if shopping_item_id in self.shopping_list:
+            del self.shopping_list[shopping_item_id]
+            return True
+        return False
+    
+    def toggle_shopping_item(self, shopping_item_id: str) -> bool:
+        """Toggle checked status of shopping item"""
+        if shopping_item_id in self.shopping_list:
+            self.shopping_list[shopping_item_id]['checked'] = not self.shopping_list[shopping_item_id]['checked']
+            return True
+        return False
+    
+    def clear_checked_shopping_items(self) -> int:
+        """Remove all checked items from shopping list"""
+        to_remove = [item_id for item_id, item in self.shopping_list.items() if item['checked']]
+        for item_id in to_remove:
+            del self.shopping_list[item_id]
+        return len(to_remove)
