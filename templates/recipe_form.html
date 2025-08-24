@@ -179,6 +179,17 @@
 <script>
 let ingredientIndex = {{ recipe.ingredients|length if recipe and recipe.ingredients else 0 }};
 
+// Item data with default units
+const itemsData = {
+    {% for item in items %}
+    '{{ item.id }}': {
+        name: '{{ item.name }}',
+        category: '{{ item.category }}',
+        defaultUnit: '{{ item.default_unit }}'
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+};
+
 function addIngredient() {
     const ingredientsList = document.getElementById('ingredientsList');
     const newRow = document.createElement('div');
@@ -187,7 +198,8 @@ function addIngredient() {
     
     newRow.innerHTML = `
         <div class="col-md-4">
-            <select class="form-select" name="ingredient_item_${ingredientIndex}" required>
+            <select class="form-select ingredient-select" name="ingredient_item_${ingredientIndex}" 
+                    onchange="updateUnitForIngredient(this)" required>
                 <option value="">Zutat wählen...</option>
                 {% for item in items %}
                     <option value="{{ item.id }}">{{ item.name }} ({{ item.category }})</option>
@@ -199,7 +211,7 @@ function addIngredient() {
                    step="0.1" min="0" placeholder="Menge" required>
         </div>
         <div class="col-md-2">
-            <input type="text" class="form-control" name="ingredient_unit_${ingredientIndex}"
+            <input type="text" class="form-control ingredient-unit" name="ingredient_unit_${ingredientIndex}"
                    placeholder="Einheit" required>
         </div>
         <div class="col-md-3">
@@ -218,9 +230,40 @@ function addIngredient() {
     ingredientIndex++;
 }
 
+function updateUnitForIngredient(selectElement) {
+    const itemId = selectElement.value;
+    if (itemId && itemsData[itemId]) {
+        const row = selectElement.closest('.ingredient-row');
+        const unitInput = row.querySelector('.ingredient-unit');
+        if (unitInput) {
+            unitInput.value = itemsData[itemId].defaultUnit;
+        }
+    }
+}
+
 function removeIngredient(button) {
     const row = button.closest('.ingredient-row');
     row.remove();
 }
+
+// Initialize existing ingredient selects with change handlers
+document.addEventListener('DOMContentLoaded', function() {
+    // Add change handlers to existing ingredient selects
+    const existingSelects = document.querySelectorAll('.ingredient-row select[name^="ingredient_item_"]');
+    existingSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            updateUnitForIngredient(this);
+        });
+        
+        // Also add CSS class for consistency
+        select.classList.add('ingredient-select');
+    });
+    
+    // Add CSS class to existing unit inputs
+    const existingUnitInputs = document.querySelectorAll('.ingredient-row input[name^="ingredient_unit_"]');
+    existingUnitInputs.forEach(input => {
+        input.classList.add('ingredient-unit');
+    });
+});
 </script>
 {% endblock %}
