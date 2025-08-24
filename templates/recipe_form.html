@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}{% if recipe %}{{ recipe.name }} bearbeiten{% else %}Neues Rezept{% endif %} - Meal Planner{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1>
+            <i data-feather="{% if recipe %}edit{% else %}plus{% endif %}" class="me-2"></i>
+            {% if recipe %}{{ recipe.name }} bearbeiten{% else %}Neues Rezept erstellen{% endif %}
+        </h1>
+    </div>
+</div>
+
+<form method="POST" action="{{ url_for('save_recipe') }}">
+    {% if recipe %}
+        <input type="hidden" name="recipe_id" value="{{ recipe.id }}">
+    {% endif %}
+    
+    <div class="row">
+        <!-- Basic Info -->
+        <div class="col-md-8 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Grundinformationen</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Rezeptname *</label>
+                        <input type="text" class="form-control" id="name" name="name" 
+                               value="{{ recipe.name if recipe else '' }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Beschreibung</label>
+                        <textarea class="form-control" id="description" name="description" rows="3">{{ recipe.description if recipe else '' }}</textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="prep_time" class="form-label">Vorbereitung (min)</label>
+                            <input type="number" class="form-control" id="prep_time" name="prep_time" 
+                                   value="{{ recipe.prep_time if recipe else 0 }}" min="0">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="cook_time" class="form-label">Kochzeit (min)</label>
+                            <input type="number" class="form-control" id="cook_time" name="cook_time" 
+                                   value="{{ recipe.cook_time if recipe else 0 }}" min="0">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="servings" class="form-label">Portionen</label>
+                            <input type="number" class="form-control" id="servings" name="servings" 
+                                   value="{{ recipe.servings if recipe else 2 }}" min="1" max="20">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Aktionen</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i data-feather="save" class="me-2"></i>
+                            Rezept speichern
+                        </button>
+                        <a href="{{ url_for('recipes') }}" class="btn btn-outline-secondary">
+                            <i data-feather="x" class="me-2"></i>
+                            Abbrechen
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ingredients -->
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Zutaten</h5>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="addIngredient()">
+                        <i data-feather="plus" class="me-1"></i>
+                        Zutat hinzufügen
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="ingredientsList">
+                        {% if recipe and recipe.ingredients %}
+                            {% for ingredient in recipe.ingredients %}
+                            <div class="ingredient-row row mb-3" data-index="{{ loop.index0 }}">
+                                <div class="col-md-4">
+                                    <select class="form-select" name="ingredient_item_{{ loop.index0 }}" required>
+                                        <option value="">Zutat wählen...</option>
+                                        {% for item in items %}
+                                            <option value="{{ item.id }}" 
+                                                    {% if item.id == ingredient.item_id %}selected{% endif %}>
+                                                {{ item.name }} ({{ item.category }})
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="number" class="form-control" 
+                                           name="ingredient_quantity_{{ loop.index0 }}"
+                                           value="{{ ingredient.quantity }}" 
+                                           step="0.1" min="0" placeholder="Menge" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="text" class="form-control" 
+                                           name="ingredient_unit_{{ loop.index0 }}"
+                                           value="{{ ingredient.unit }}" 
+                                           placeholder="Einheit" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="text" class="form-control" 
+                                           name="ingredient_notes_{{ loop.index0 }}"
+                                           value="{{ ingredient.notes if ingredient.notes else '' }}" 
+                                           placeholder="Hinweise (optional)">
+                                </div>
+                                <div class="col-md-1">
+                                    <button type="button" class="btn btn-outline-danger btn-sm" 
+                                            onclick="removeIngredient(this)">
+                                        <i data-feather="trash-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    
+                    {% if not recipe or not recipe.ingredients %}
+                    <p class="text-muted text-center">
+                        Noch keine Zutaten hinzugefügt. Klicken Sie auf "Zutat hinzufügen" um zu beginnen.
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Anleitung</h5>
+                </div>
+                <div class="card-body">
+                    <textarea class="form-control" id="instructions" name="instructions" rows="8" 
+                              placeholder="Schritt-für-Schritt Anleitung...">{{ recipe.instructions if recipe else '' }}</textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submit -->
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ url_for('recipes') }}" class="btn btn-outline-secondary">
+                    Abbrechen
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i data-feather="save" class="me-2"></i>
+                    Rezept speichern
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+let ingredientIndex = {{ recipe.ingredients|length if recipe and recipe.ingredients else 0 }};
+
+function addIngredient() {
+    const ingredientsList = document.getElementById('ingredientsList');
+    const newRow = document.createElement('div');
+    newRow.className = 'ingredient-row row mb-3';
+    newRow.setAttribute('data-index', ingredientIndex);
+    
+    newRow.innerHTML = `
+        <div class="col-md-4">
+            <select class="form-select" name="ingredient_item_${ingredientIndex}" required>
+                <option value="">Zutat wählen...</option>
+                {% for item in items %}
+                    <option value="{{ item.id }}">{{ item.name }} ({{ item.category }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <input type="number" class="form-control" name="ingredient_quantity_${ingredientIndex}"
+                   step="0.1" min="0" placeholder="Menge" required>
+        </div>
+        <div class="col-md-2">
+            <input type="text" class="form-control" name="ingredient_unit_${ingredientIndex}"
+                   placeholder="Einheit" required>
+        </div>
+        <div class="col-md-3">
+            <input type="text" class="form-control" name="ingredient_notes_${ingredientIndex}"
+                   placeholder="Hinweise (optional)">
+        </div>
+        <div class="col-md-1">
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeIngredient(this)">
+                <i data-feather="trash-2"></i>
+            </button>
+        </div>
+    `;
+    
+    ingredientsList.appendChild(newRow);
+    feather.replace();
+    ingredientIndex++;
+}
+
+function removeIngredient(button) {
+    const row = button.closest('.ingredient-row');
+    row.remove();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,261 @@
+/* Custom styles for the Meal Planner application */
+
+/* General improvements */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Navigation improvements */
+.navbar-brand {
+    font-weight: 600;
+}
+
+.navbar-nav .nav-link {
+    font-weight: 500;
+    border-radius: 0.375rem;
+    margin: 0 0.25rem;
+    transition: all 0.2s ease;
+}
+
+.navbar-nav .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Card improvements */
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    background-color: rgba(var(--bs-secondary-rgb), 0.1);
+    border-bottom: 1px solid rgba(var(--bs-border-color-rgb), 0.2);
+}
+
+/* Recipe cards */
+.recipe-card {
+    transition: transform 0.2s ease;
+}
+
+.recipe-card:hover {
+    transform: translateY(-2px);
+}
+
+/* Meal planning specific styles */
+.meal-type-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.location-badge {
+    font-size: 0.7rem;
+}
+
+/* Shopping list styles */
+.form-check-input:checked {
+    background-color: var(--bs-success);
+    border-color: var(--bs-success);
+}
+
+.form-check-label {
+    cursor: pointer;
+}
+
+.shopping-item-checked {
+    opacity: 0.6;
+    text-decoration: line-through;
+}
+
+/* Ingredient list styles */
+.ingredient-row {
+    background-color: rgba(var(--bs-secondary-rgb), 0.05);
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.ingredient-row:hover {
+    background-color: rgba(var(--bs-secondary-rgb), 0.1);
+}
+
+/* Form improvements */
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Button improvements */
+.btn {
+    font-weight: 500;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+}
+
+.btn-group .btn {
+    border-radius: 0.375rem;
+}
+
+.btn-group .btn:not(:last-child) {
+    margin-right: 0.25rem;
+}
+
+/* Table improvements */
+.table th {
+    border-bottom-width: 2px;
+    font-weight: 600;
+    color: var(--bs-emphasis-color);
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(var(--bs-emphasis-color-rgb), 0.05);
+}
+
+/* Week calendar styles */
+.week-calendar .table td {
+    height: 80px;
+    vertical-align: top;
+    padding: 0.5rem;
+}
+
+.week-calendar .table th {
+    text-align: center;
+    padding: 0.75rem 0.5rem;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .btn-group {
+        flex-direction: column;
+    }
+    
+    .btn-group .btn {
+        margin-right: 0;
+        margin-bottom: 0.25rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+}
+
+/* Print styles */
+@media print {
+    .navbar,
+    .btn,
+    .btn-group,
+    .modal,
+    .alert {
+        display: none !important;
+    }
+    
+    .container {
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    .card {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+        margin-bottom: 1rem;
+    }
+    
+    .form-check-input {
+        -webkit-appearance: checkbox;
+        appearance: checkbox;
+    }
+}
+
+/* Loading states */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Animation for adding/removing items */
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-out {
+    animation: fadeOut 0.3s ease-out forwards;
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-10px); }
+}
+
+/* Feather icon improvements */
+.feather {
+    stroke-width: 2;
+    vertical-align: text-bottom;
+}
+
+/* Custom spacing */
+.gap-1 { gap: 0.25rem; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 1rem; }
+
+/* Category color coding */
+.category-fleisch { border-left: 4px solid #dc3545; }
+.category-gemuese { border-left: 4px solid #28a745; }
+.category-milchprodukte { border-left: 4px solid #007bff; }
+.category-getreide { border-left: 4px solid #ffc107; }
+.category-haushalt { border-left: 4px solid #6c757d; }
+
+/* Portion calculator */
+.portion-calculator {
+    background-color: rgba(var(--bs-info-rgb), 0.1);
+    border: 1px solid rgba(var(--bs-info-rgb), 0.3);
+    border-radius: 0.375rem;
+    padding: 1rem;
+}
+
+/* Instructions formatting */
+.instructions {
+    line-height: 1.6;
+    white-space: pre-line;
+}
+
+.instructions p {
+    margin-bottom: 1rem;
+}
+
+/* Empty state styles */
+.empty-state {
+    padding: 3rem 1rem;
+    text-align: center;
+}
+
+.empty-state .feather {
+    width: 48px;
+    height: 48px;
+    opacity: 0.5;
+    margin-bottom: 1rem;
+}
+
+/* Status indicators */
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 0.5rem;
+}
+
+.status-planned { background-color: var(--bs-info); }
+.status-active { background-color: var(--bs-success); }
+.status-completed { background-color: var(--bs-secondary); }

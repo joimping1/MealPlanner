@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}Einkaufsliste - Woche {{ meal_plan.week_start_date.strftime('%d.%m.%Y') }} - Meal Planner{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+                <h1>
+                    <i data-feather="shopping-cart" class="me-2"></i>
+                    Einkaufsliste
+                </h1>
+                <p class="text-muted">
+                    Woche vom {{ meal_plan.week_start_date.strftime('%d.%m.%Y') }} bis 
+                    {{ (meal_plan.week_start_date|add_days(6)).strftime('%d.%m.%Y') }}
+                </p>
+            </div>
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('meal_plan_detail', plan_id=meal_plan.id) }}" class="btn btn-outline-secondary">
+                    <i data-feather="arrow-left" class="me-2"></i>
+                    Zurück zum Plan
+                </a>
+                <button onclick="window.print()" class="btn btn-outline-primary">
+                    <i data-feather="printer" class="me-2"></i>
+                    Drucken
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <h3 class="text-primary">{{ total_items }}</h3>
+                        <p class="mb-0">Artikel insgesamt</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h3 class="text-success">{{ categories|length }}</h3>
+                        <p class="mb-0">Kategorien</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h3 class="text-info">{{ meal_plan.planned_meals|length }}</h3>
+                        <p class="mb-0">Mahlzeiten geplant</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h3 class="text-warning" id="checkedCount">0</h3>
+                        <p class="mb-0">Erledigt</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Shopping List by Category -->
+<div class="row">
+    {% if categories %}
+        {% for category, items in categories.items() %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i data-feather="{% if category == 'Fleisch' %}heart{% elif category == 'Gemüse' %}star{% elif category == 'Milchprodukte' %}droplet{% elif category == 'Haushalt' %}home{% else %}package{% endif %}" class="me-2"></i>
+                        {{ category }}
+                        <span class="badge bg-secondary ms-2">{{ items|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for item in items %}
+                    <div class="form-check d-flex align-items-start mb-2">
+                        <input class="form-check-input me-2 mt-1" type="checkbox" 
+                               id="item_{{ loop.index }}_{{ category|replace(' ', '_') }}"
+                               onchange="updateCheckedCount()">
+                        <div class="flex-grow-1">
+                            <label class="form-check-label w-100" 
+                                   for="item_{{ loop.index }}_{{ category|replace(' ', '_') }}">
+                                <div class="d-flex justify-content-between">
+                                    <span class="fw-bold">{{ item.item_name }}</span>
+                                    <span class="text-primary">{{ item.quantity }} {{ item.unit }}</span>
+                                </div>
+                                {% if item.sources|length > 1 %}
+                                <small class="text-muted">
+                                    Für {{ item.sources|length }} Rezepte
+                                    <button type="button" class="btn btn-link btn-sm p-0 ms-1" 
+                                            data-bs-toggle="collapse" 
+                                            data-bs-target="#details_{{ loop.index }}_{{ category|replace(' ', '_') }}">
+                                        <i data-feather="info" style="width: 12px; height: 12px;"></i>
+                                    </button>
+                                </small>
+                                <div class="collapse mt-1" id="details_{{ loop.index }}_{{ category|replace(' ', '_') }}">
+                                    <div class="small text-muted">
+                                        {% for source in item.sources %}
+                                        <div>{{ source.recipe_name }} ({{ source.meal_date }}, {{ source.quantity }} {{ item.unit }})</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% else %}
+                                <small class="text-muted">
+                                    {{ item.sources[0].recipe_name }} - {{ item.sources[0].meal_date }}
+                                </small>
+                                {% endif %}
+                            </label>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i data-feather="shopping-cart" class="mb-3" style="width: 48px; height: 48px;"></i>
+                    <h5>Keine Einkaufsliste verfügbar</h5>
+                    <p class="text-muted">
+                        Es sind keine Mahlzeiten für diese Woche geplant. 
+                        Fügen Sie zuerst Mahlzeiten zu Ihrem Wochenplan hinzu.
+                    </p>
+                    <a href="{{ url_for('meal_plan_detail', plan_id=meal_plan.id) }}" class="btn btn-primary">
+                        <i data-feather="plus" class="me-2"></i>
+                        Mahlzeiten hinzufügen
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="zap" class="me-2"></i>
+                    Schnellaktionen
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-success w-100" onclick="checkAllItems(true)">
+                            <i data-feather="check-square" class="me-2"></i>
+                            Alle abhaken
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-secondary w-100" onclick="checkAllItems(false)">
+                            <i data-feather="square" class="me-2"></i>
+                            Alle zurücksetzen
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-primary w-100" onclick="toggleCheckedItems()">
+                            <i data-feather="eye-off" class="me-2"></i>
+                            Erledigte ausblenden
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-info w-100" onclick="window.print()">
+                            <i data-feather="printer" class="me-2"></i>
+                            Drucken
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateCheckedCount() {
+    const checkedBoxes = document.querySelectorAll('input[type="checkbox"]:checked');
+    document.getElementById('checkedCount').textContent = checkedBoxes.length;
+}
+
+function checkAllItems(checked) {
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = checked;
+    });
+    updateCheckedCount();
+}
+
+let hideChecked = false;
+function toggleCheckedItems() {
+    const button = event.target.closest('button');
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    
+    hideChecked = !hideChecked;
+    
+    checkboxes.forEach(checkbox => {
+        const formCheck = checkbox.closest('.form-check');
+        if (hideChecked && checkbox.checked) {
+            formCheck.style.display = 'none';
+        } else {
+            formCheck.style.display = 'flex';
+        }
+    });
+    
+    if (hideChecked) {
+        button.innerHTML = '<i data-feather="eye" class="me-2"></i>Erledigte anzeigen';
+    } else {
+        button.innerHTML = '<i data-feather="eye-off" class="me-2"></i>Erledigte ausblenden';
+    }
+    feather.replace();
+}
+
+// Save checkbox states to localStorage
+function saveCheckboxStates() {
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    const states = {};
+    checkboxes.forEach(checkbox => {
+        states[checkbox.id] = checkbox.checked;
+    });
+    localStorage.setItem('shoppingList_{{ meal_plan.id }}', JSON.stringify(states));
+}
+
+// Load checkbox states from localStorage
+function loadCheckboxStates() {
+    const saved = localStorage.getItem('shoppingList_{{ meal_plan.id }}');
+    if (saved) {
+        const states = JSON.parse(saved);
+        Object.keys(states).forEach(id => {
+            const checkbox = document.getElementById(id);
+            if (checkbox) {
+                checkbox.checked = states[id];
+            }
+        });
+        updateCheckedCount();
+    }
+}
+
+// Auto-save on change
+document.addEventListener('change', function(e) {
+    if (e.target.type === 'checkbox') {
+        saveCheckboxStates();
+    }
+});
+
+// Load saved states on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadCheckboxStates();
+});
+</script>
+
+<style>
+@media print {
+    .btn, .card-header .badge, .btn-group, button {
+        display: none !important;
+    }
+    
+    .card {
+        border: 1px solid #000 !important;
+        break-inside: avoid;
+    }
+    
+    .form-check-input {
+        -webkit-appearance: checkbox;
+        appearance: checkbox;
+    }
+}
+</style>
+{% endblock %}

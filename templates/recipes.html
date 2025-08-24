@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Rezepte - Meal Planner{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i data-feather="book-open" class="me-2"></i>
+                Rezepte
+            </h1>
+            <a href="{{ url_for('new_recipe') }}" class="btn btn-primary">
+                <i data-feather="plus" class="me-2"></i>
+                Neues Rezept
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Recipes Grid -->
+<div class="row">
+    {% if recipes %}
+        {% for recipe in recipes %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ recipe.name }}</h5>
+                    <p class="card-text text-muted">
+                        {{ recipe.description[:120] }}{% if recipe.description|length > 120 %}...{% endif %}
+                    </p>
+                    
+                    <div class="row text-muted small mb-3">
+                        <div class="col-6">
+                            <i data-feather="clock" class="me-1"></i>
+                            {{ recipe.prep_time + recipe.cook_time }} min
+                        </div>
+                        <div class="col-6">
+                            <i data-feather="users" class="me-1"></i>
+                            {{ recipe.servings }} Portionen
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">{{ recipe.ingredients|length }} Zutaten</small>
+                        <div class="btn-group" role="group">
+                            <a href="{{ url_for('recipe_detail', recipe_id=recipe.id) }}" 
+                               class="btn btn-outline-primary btn-sm">
+                                <i data-feather="eye"></i>
+                            </a>
+                            <a href="{{ url_for('edit_recipe', recipe_id=recipe.id) }}" 
+                               class="btn btn-outline-secondary btn-sm">
+                                <i data-feather="edit"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i data-feather="book-open" class="mb-3" style="width: 48px; height: 48px;"></i>
+                    <h5>Noch keine Rezepte vorhanden</h5>
+                    <p class="text-muted">Erstellen Sie Ihr erstes Rezept, um mit der Wochenplanung zu beginnen.</p>
+                    <a href="{{ url_for('new_recipe') }}" class="btn btn-primary">
+                        <i data-feather="plus" class="me-2"></i>
+                        Erstes Rezept erstellen
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

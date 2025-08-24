@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}{% if meal_plan %}Wochenplan bearbeiten{% else %}Neue Wochenplanung{% endif %} - Meal Planner{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1>
+            <i data-feather="{% if meal_plan %}edit{% else %}plus{% endif %}" class="me-2"></i>
+            {% if meal_plan %}Wochenplan bearbeiten{% else %}Neue Wochenplanung erstellen{% endif %}
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Planungsdetails</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('save_meal_plan') }}">
+                    {% if meal_plan %}
+                        <input type="hidden" name="plan_id" value="{{ meal_plan.id }}">
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label for="week_start_date" class="form-label">Wochenbeginn (Montag) *</label>
+                        <input type="date" class="form-control" id="week_start_date" name="week_start_date" 
+                               value="{{ meal_plan.week_start_date.isoformat() if meal_plan else '' }}" required>
+                        <div class="form-text">Wählen Sie den Montag der Woche, die Sie planen möchten.</div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ url_for('meal_plans') }}" class="btn btn-outline-secondary">
+                            Abbrechen
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i data-feather="save" class="me-2"></i>
+                            {% if meal_plan %}Aktualisieren{% else %}Erstellen{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="info" class="me-2"></i>
+                    Planungshilfe
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6>Wochenplanung Tipps:</h6>
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i data-feather="home" class="me-2 text-success"></i>
+                        <strong>Homeoffice-Tage:</strong> Frühstück, Mittag & Abendessen planen
+                    </li>
+                    <li class="mb-2">
+                        <i data-feather="briefcase" class="me-2 text-info"></i>
+                        <strong>Büro-Tage:</strong> Nur Frühstück & Abendessen planen
+                    </li>
+                    <li class="mb-2">
+                        <i data-feather="users" class="me-2 text-warning"></i>
+                        <strong>Portionen:</strong> Anzahl Personen pro Mahlzeit anpassen
+                    </li>
+                    <li class="mb-2">
+                        <i data-feather="repeat" class="me-2 text-primary"></i>
+                        <strong>Multi-Tag-Rezepte:</strong> Einmal kochen, mehrere Tage essen
+                    </li>
+                </ul>
+                
+                <hr>
+                
+                <h6>Nach dem Erstellen können Sie:</h6>
+                <ul class="list-unstyled">
+                    <li class="mb-1">
+                        <i data-feather="plus" class="me-2"></i>
+                        Mahlzeiten zur Woche hinzufügen
+                    </li>
+                    <li class="mb-1">
+                        <i data-feather="shopping-cart" class="me-2"></i>
+                        Automatische Einkaufsliste generieren
+                    </li>
+                    <li class="mb-1">
+                        <i data-feather="calendar" class="me-2"></i>
+                        Wochenübersicht anzeigen
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dateInput = document.getElementById('week_start_date');
+    
+    // Set default to next Monday if no date is set
+    if (!dateInput.value) {
+        const today = new Date();
+        const dayOfWeek = today.getDay();
+        const daysUntilMonday = dayOfWeek === 0 ? 1 : 8 - dayOfWeek; // 0 = Sunday
+        const nextMonday = new Date(today.getTime() + daysUntilMonday * 24 * 60 * 60 * 1000);
+        dateInput.value = nextMonday.toISOString().split('T')[0];
+    }
+    
+    // Validate that selected date is a Monday
+    dateInput.addEventListener('change', function() {
+        const selectedDate = new Date(this.value);
+        if (selectedDate.getDay() !== 1) { // 1 = Monday
+            alert('Bitte wählen Sie einen Montag als Wochenbeginn.');
+            this.focus();
+        }
+    });
+});
+</script>
+{% endblock %}

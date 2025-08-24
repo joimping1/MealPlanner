@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Lebensmittel - Meal Planner{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i data-feather="package" class="me-2"></i>
+                Lebensmittel
+            </h1>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                <i data-feather="plus" class="me-2"></i>
+                Neues Lebensmittel
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Category Filter -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <form method="GET" class="d-flex">
+            <select name="category" class="form-select me-2" onchange="this.form.submit()">
+                <option value="">Alle Kategorien</option>
+                {% for category in categories %}
+                    <option value="{{ category }}" {% if category == selected_category %}selected{% endif %}>
+                        {{ category }}
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-outline-secondary">
+                <i data-feather="filter"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Items List -->
+<div class="row">
+    <div class="col-12">
+        {% if items %}
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Kategorie</th>
+                                    <th>Standardeinheit</th>
+                                    <th>Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ item.name }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ item.category }}</span>
+                                    </td>
+                                    <td>{{ item.default_unit }}</td>
+                                    <td>
+                                        <form method="POST" action="{{ url_for('delete_item', item_id=item.id) }}" class="d-inline" 
+                                              onsubmit="return confirm('Lebensmittel wirklich löschen?')">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                <i data-feather="trash-2"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="card">
+                <div class="card-body text-center">
+                    <i data-feather="package" class="mb-3" style="width: 48px; height: 48px;"></i>
+                    <h5>Keine Lebensmittel gefunden</h5>
+                    <p class="text-muted">
+                        {% if selected_category %}
+                            Keine Lebensmittel in der Kategorie "{{ selected_category }}" gefunden.
+                        {% else %}
+                            Fügen Sie Ihr erstes Lebensmittel hinzu.
+                        {% endif %}
+                    </p>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                        <i data-feather="plus" class="me-2"></i>
+                        Lebensmittel hinzufügen
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add Item Modal -->
+<div class="modal fade" id="addItemModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Neues Lebensmittel hinzufügen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_item') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Kategorie</label>
+                        <input type="text" class="form-control" id="category" name="category" 
+                               list="categoryOptions" required>
+                        <datalist id="categoryOptions">
+                            <option value="Fleisch">
+                            <option value="Fisch">
+                            <option value="Gemüse">
+                            <option value="Obst">
+                            <option value="Getreide">
+                            <option value="Milchprodukte">
+                            <option value="Öle & Fette">
+                            <option value="Gewürze">
+                            <option value="Haushalt">
+                            <option value="Getränke">
+                        </datalist>
+                    </div>
+                    <div class="mb-3">
+                        <label for="default_unit" class="form-label">Standardeinheit</label>
+                        <input type="text" class="form-control" id="default_unit" name="default_unit" 
+                               list="unitOptions" required>
+                        <datalist id="unitOptions">
+                            <option value="g">
+                            <option value="kg">
+                            <option value="ml">
+                            <option value="l">
+                            <option value="Stück">
+                            <option value="Packung">
+                            <option value="Dose">
+                            <option value="Flasche">
+                            <option value="TL">
+                            <option value="EL">
+                        </datalist>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">Hinzufügen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
