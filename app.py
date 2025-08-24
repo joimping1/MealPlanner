@@ -14,6 +14,18 @@ app.secret_key = os.environ.get("SESSION_SECRET", "fallback-secret-key")
 # Initialize data store
 data_store = DataStore()
 
+# Add custom Jinja2 filters
+@app.template_filter('add_days')
+def add_days_filter(date, days):
+    """Add days to a date"""
+    from datetime import timedelta
+    return date + timedelta(days=days)
+
+@app.template_filter('nl2br')
+def nl2br_filter(value):
+    """Convert newlines to <br> tags"""
+    return value.replace('\n', '<br>\n')
+
 @app.route('/')
 def index():
     """Dashboard showing overview of recent activity"""
@@ -219,7 +231,11 @@ def meal_plan_detail(plan_id):
 def save_meal_plan():
     """Save meal plan"""
     plan_id = request.form.get('plan_id')
-    week_start_date = datetime.strptime(request.form.get('week_start_date'), '%Y-%m-%d').date()
+    week_start_str = request.form.get('week_start_date')
+    if not week_start_str:
+        flash('Wochenbeginn ist erforderlich', 'error')
+        return redirect(url_for('new_meal_plan'))
+    week_start_date = datetime.strptime(week_start_str, '%Y-%m-%d').date()
     
     if plan_id:
         # Update existing plan
@@ -236,11 +252,17 @@ def save_meal_plan():
 def add_planned_meal(plan_id):
     """Add meal to plan"""
     recipe_id = request.form.get('recipe_id')
-    date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
+    date_str = request.form.get('date')
     meal_type = request.form.get('meal_type')
     servings = int(request.form.get('servings', 2))
     location = request.form.get('location', 'home')
     notes = request.form.get('notes', '').strip()
+    
+    if not all([recipe_id, date_str, meal_type]):
+        flash('Rezept, Datum und Mahlzeit sind erforderlich', 'error')
+        return redirect(url_for('meal_plan_detail', plan_id=plan_id))
+        
+    date = datetime.strptime(date_str, '%Y-%m-%d').date()
     
     if data_store.add_planned_meal(plan_id, recipe_id, date, meal_type, servings, location, notes):
         flash('Mahlzeit wurde hinzugefügt', 'success')

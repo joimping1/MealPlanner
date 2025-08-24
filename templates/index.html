@@ -29,7 +29,7 @@
                         Neues Rezept erstellen
                     </a>
                     <a href="{{ url_for('new_meal_plan') }}" class="btn btn-secondary">
-                        <i data-feather="calendar-plus" class="me-2"></i>
+                        <i data-feather="plus-circle" class="me-2"></i>
                         Neue Wochenplanung
                     </a>
                     <a href="{{ url_for('items') }}" class="btn btn-outline-secondary">
@@ -71,7 +71,7 @@
                 {% else %}
                     <p class="text-muted mb-3">Keine Wochenplanung für diese Woche gefunden.</p>
                     <a href="{{ url_for('new_meal_plan') }}" class="btn btn-primary btn-sm">
-                        <i data-feather="plus" class="me-1"></i>
+                        <i data-feather="plus-circle" class="me-1"></i>
                         Wochenplanung erstellen
                     </a>
                 {% endif %}
