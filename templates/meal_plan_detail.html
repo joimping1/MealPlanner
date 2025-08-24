@@ -51,10 +51,61 @@
                     </button>
                     {% endfor %}
                 </div>
-                <button type="button" class="btn btn-success" onclick="proceedToStep2()">
+                <button type="button" class="btn btn-success" onclick="proceedToBreakfastStep()">
                     <i data-feather="arrow-right" class="me-2"></i>
-                    Weiter zu Schritt 2
+                    Weiter
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Step 1.5: Weekly Breakfast Selection -->
+<div id="breakfastStep" class="row mb-4" style="display: none;">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="sunrise" class="me-2"></i>
+                    Optionales Wochen-Frühstück
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">Möchtest du ein Frühstück für die ganze Woche festlegen? (Optional)</p>
+                
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="weeklyBreakfastRecipe" class="form-label">Frühstück für die ganze Woche</label>
+                        <select class="form-select" id="weeklyBreakfastRecipe">
+                            <option value="">Kein Wochen-Frühstück</option>
+                            {% for recipe in recipes %}
+                            <option value="{{ recipe.id }}">{{ recipe.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="weeklyBreakfastPortions" class="form-label">Portionen pro Tag</label>
+                        <input type="number" class="form-control" id="weeklyBreakfastPortions" 
+                               value="2" min="1" max="20">
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i data-feather="info" class="me-2"></i>
+                    Falls du ein Wochen-Frühstück auswählst, wird es automatisch für alle 7 Tage gesetzt. 
+                    Du kannst es später bei der Tagesplanung noch anpassen oder entfernen.
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary" onclick="backToStep1()">
+                        <i data-feather="arrow-left" class="me-2"></i>
+                        Zurück
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="proceedToStep2()">
+                        <i data-feather="arrow-right" class="me-2"></i>
+                        Weiter zur Tagesplanung
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -216,9 +267,9 @@
                 {% endfor %}
                 
                 <div class="mt-4">
-                    <button type="button" class="btn btn-outline-secondary me-2" onclick="backToStep1()">
+                    <button type="button" class="btn btn-outline-secondary me-2" onclick="backToBreakfastStep()">
                         <i data-feather="arrow-left" class="me-2"></i>
-                        Zurück zu Schritt 1
+                        Zurück zu Frühstück
                     </button>
                     <button type="button" class="btn btn-success" onclick="saveMealPlan()">
                         <i data-feather="save" class="me-2"></i>
@@ -295,6 +346,7 @@
 <script>
 let lunchDays = new Set();
 let weekPlan = {};
+let weeklyBreakfast = null;
 
 // Step 1: Lunch Day Selection
 document.querySelectorAll('.lunch-day-btn').forEach(btn => {
@@ -312,8 +364,42 @@ document.querySelectorAll('.lunch-day-btn').forEach(btn => {
     });
 });
 
-function proceedToStep2() {
+function proceedToBreakfastStep() {
     document.getElementById('step1').style.display = 'none';
+    document.getElementById('breakfastStep').style.display = 'block';
+}
+
+function proceedToStep2() {
+    // Get weekly breakfast selection
+    const breakfastSelect = document.getElementById('weeklyBreakfastRecipe');
+    const breakfastPortions = document.getElementById('weeklyBreakfastPortions');
+    
+    if (breakfastSelect.value) {
+        weeklyBreakfast = {
+            recipeId: breakfastSelect.value,
+            recipeName: breakfastSelect.selectedOptions[0].text,
+            portions: parseInt(breakfastPortions.value) || 2
+        };
+        
+        // Pre-fill breakfast for all days
+        for (let i = 0; i < 7; i++) {
+            if (!weekPlan[i]) weekPlan[i] = {};
+            if (!weekPlan[i]['breakfast']) weekPlan[i]['breakfast'] = [];
+            
+            // Add weekly breakfast if not already added
+            const hasBreakfast = weekPlan[i]['breakfast'].some(meal => meal.recipeId === weeklyBreakfast.recipeId);
+            if (!hasBreakfast) {
+                weekPlan[i]['breakfast'].push({
+                    recipeId: weeklyBreakfast.recipeId,
+                    recipeName: weeklyBreakfast.recipeName,
+                    portions: weeklyBreakfast.portions,
+                    mealsCount: 1
+                });
+            }
+        }
+    }
+    
+    document.getElementById('breakfastStep').style.display = 'none';
     document.getElementById('step2').style.display = 'block';
     
     // Show/hide lunch sections based on selection
@@ -324,12 +410,44 @@ function proceedToStep2() {
         } else {
             lunchSection.style.display = 'none';
         }
+        
+        // Pre-fill weekly breakfast if selected
+        if (weeklyBreakfast) {
+            const plannedMealsDiv = document.querySelector(`.planned-meals[data-day="${i}"][data-meal="breakfast"]`);
+            const existingMeal = plannedMealsDiv.querySelector(`[data-recipe-id="${weeklyBreakfast.recipeId}"]`);
+            
+            if (!existingMeal) {
+                const mealDiv = document.createElement('div');
+                mealDiv.className = 'alert alert-light d-flex justify-content-between align-items-center mb-1';
+                mealDiv.innerHTML = `
+                    <span>
+                        <strong>${weeklyBreakfast.recipeName}</strong> - ${weeklyBreakfast.portions} Portionen 
+                        <small class="text-muted">(Wochen-Frühstück)</small>
+                    </span>
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeMeal(this)">
+                        <i data-feather="x"></i>
+                    </button>
+                `;
+                mealDiv.dataset.recipeId = weeklyBreakfast.recipeId;
+                mealDiv.dataset.portions = weeklyBreakfast.portions;
+                mealDiv.dataset.mealsCount = 1;
+                
+                plannedMealsDiv.appendChild(mealDiv);
+            }
+        }
     }
+    
+    feather.replace();
 }
 
 function backToStep1() {
-    document.getElementById('step2').style.display = 'none';
+    document.getElementById('breakfastStep').style.display = 'none';
     document.getElementById('step1').style.display = 'block';
+}
+
+function backToBreakfastStep() {
+    document.getElementById('step2').style.display = 'none';
+    document.getElementById('breakfastStep').style.display = 'block';
 }
 
 // Step 2: Day Management
