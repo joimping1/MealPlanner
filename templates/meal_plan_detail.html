@@ -30,200 +30,257 @@
     </div>
 </div>
 
-<!-- Add Meal Form -->
-<div class="row mb-4">
+<!-- Step 1: Lunch Days Selection -->
+<div id="step1" class="row mb-4">
     <div class="col-12">
         <div class="card">
             <div class="card-header">
                 <h5 class="card-title mb-0">
-                    <i data-feather="plus" class="me-2"></i>
-                    Mahlzeit hinzufügen
+                    <i data-feather="home" class="me-2"></i>
+                    Schritt 1: An welchen Tagen isst du Mittags zu Hause?
                 </h5>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('add_planned_meal', plan_id=meal_plan.id) }}">
-                    <div class="row">
-                        <div class="col-md-3 mb-3">
-                            <label for="recipe_id" class="form-label">Rezept</label>
-                            <select class="form-select" id="recipe_id" name="recipe_id" required>
-                                <option value="">Rezept wählen...</option>
-                                {% for recipe in recipes %}
-                                    <option value="{{ recipe.id }}">{{ recipe.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-2 mb-3">
-                            <label for="date" class="form-label">Datum</label>
-                            <input type="date" class="form-control" id="date" name="date" required>
-                        </div>
-                        <div class="col-md-2 mb-3">
-                            <label for="meal_type" class="form-label">Mahlzeit</label>
-                            <select class="form-select" id="meal_type" name="meal_type" required>
-                                <option value="breakfast">Frühstück</option>
-                                <option value="lunch">Mittagessen</option>
-                                <option value="dinner">Abendessen</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2 mb-3">
-                            <label for="servings" class="form-label">Portionen</label>
-                            <input type="number" class="form-control" id="servings" name="servings" 
-                                   value="2" min="1" max="20" required>
-                        </div>
-                        <div class="col-md-2 mb-3">
-                            <label for="location" class="form-label">Ort</label>
-                            <select class="form-select" id="location" name="location">
-                                <option value="home">Zuhause</option>
-                                <option value="office">Büro</option>
-                            </select>
-                        </div>
-                        <div class="col-md-1 mb-3">
-                            <label class="form-label">&nbsp;</label>
-                            <button type="submit" class="btn btn-primary d-block">
-                                <i data-feather="plus"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-12">
-                            <label for="notes" class="form-label">Notizen (optional)</label>
-                            <input type="text" class="form-control" id="notes" name="notes" 
-                                   placeholder="Besondere Hinweise...">
-                        </div>
-                    </div>
-                </form>
+                <p class="mb-3">Wähle die Tage aus, an denen du zu Hause Mittag isst:</p>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    {% set weekdays = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'] %}
+                    {% for day in weekdays %}
+                    <button type="button" class="btn btn-outline-primary lunch-day-btn" 
+                            data-day="{{ loop.index0 }}" data-day-name="{{ day }}">
+                        {{ day }}
+                    </button>
+                    {% endfor %}
+                </div>
+                <button type="button" class="btn btn-success" onclick="proceedToStep2()">
+                    <i data-feather="arrow-right" class="me-2"></i>
+                    Weiter zu Schritt 2
+                </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Planned Meals -->
+<!-- Step 2: Daily Planning -->
+<div id="step2" class="row mb-4" style="display: none;">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="calendar" class="me-2"></i>
+                    Schritt 2: Tagesplanung
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">Plane deine Mahlzeiten für jeden Tag der Woche:</p>
+                
+                {% for i in range(7) %}
+                {% set day_date = meal_plan.week_start_date|add_days(i) %}
+                {% set weekday_names = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'] %}
+                
+                <div class="day-card mb-3" data-day="{{ i }}">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center" 
+                             style="cursor: pointer;" onclick="toggleDay({{ i }})">
+                            <div class="d-flex align-items-center">
+                                <input type="checkbox" class="form-check-input me-2 day-active-checkbox" 
+                                       id="day{{ i }}_active" onchange="toggleDayActive({{ i }})">
+                                <h6 class="mb-0">
+                                    {{ weekday_names[i] }}, {{ day_date.strftime('%d.%m.%Y') }}
+                                </h6>
+                            </div>
+                            <i data-feather="chevron-down" class="day-chevron" id="chevron{{ i }}"></i>
+                        </div>
+                        <div class="collapse day-collapse" id="dayCollapse{{ i }}">
+                            <div class="card-body">
+                                <div class="day-not-home alert alert-secondary" id="dayNotHome{{ i }}" style="display: none;">
+                                    <i data-feather="coffee" class="me-2"></i>
+                                    An diesem Tag isst du nicht zu Hause.
+                                </div>
+                                
+                                <div class="day-meals" id="dayMeals{{ i }}">
+                                    <!-- Breakfast -->
+                                    <div class="meal-section mb-4">
+                                        <h6 class="mb-3">
+                                            <i data-feather="sunrise" class="me-2"></i>
+                                            Frühstück
+                                        </h6>
+                                        <div class="meal-assignment" data-day="{{ i }}" data-meal="breakfast">
+                                            <div class="row">
+                                                <div class="col-md-4">
+                                                    <select class="form-select recipe-select" data-day="{{ i }}" data-meal="breakfast">
+                                                        <option value="">Rezept wählen...</option>
+                                                        {% for recipe in recipes %}
+                                                        <option value="{{ recipe.id }}">{{ recipe.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <input type="number" class="form-control portions-input" 
+                                                           data-day="{{ i }}" data-meal="breakfast"
+                                                           placeholder="Portionen" min="1" max="20" value="2">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <input type="number" class="form-control meals-count-input" 
+                                                           data-day="{{ i }}" data-meal="breakfast"
+                                                           placeholder="Für wieviele Mahlzeiten?" min="1" max="10" value="1">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <button type="button" class="btn btn-outline-success btn-sm add-meal-btn"
+                                                            data-day="{{ i }}" data-meal="breakfast" onclick="addMeal(this)">
+                                                        <i data-feather="plus"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="planned-meals mt-2" data-day="{{ i }}" data-meal="breakfast"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Lunch (conditionally shown) -->
+                                    <div class="meal-section mb-4 lunch-section" id="lunchSection{{ i }}" style="display: none;">
+                                        <h6 class="mb-3">
+                                            <i data-feather="sun" class="me-2"></i>
+                                            Mittagessen
+                                        </h6>
+                                        <div class="meal-assignment" data-day="{{ i }}" data-meal="lunch">
+                                            <div class="row">
+                                                <div class="col-md-4">
+                                                    <select class="form-select recipe-select" data-day="{{ i }}" data-meal="lunch">
+                                                        <option value="">Rezept wählen...</option>
+                                                        {% for recipe in recipes %}
+                                                        <option value="{{ recipe.id }}">{{ recipe.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <input type="number" class="form-control portions-input" 
+                                                           data-day="{{ i }}" data-meal="lunch"
+                                                           placeholder="Portionen" min="1" max="20" value="2">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <input type="number" class="form-control meals-count-input" 
+                                                           data-day="{{ i }}" data-meal="lunch"
+                                                           placeholder="Für wieviele Mahlzeiten?" min="1" max="10" value="1">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <button type="button" class="btn btn-outline-success btn-sm add-meal-btn"
+                                                            data-day="{{ i }}" data-meal="lunch" onclick="addMeal(this)">
+                                                        <i data-feather="plus"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="planned-meals mt-2" data-day="{{ i }}" data-meal="lunch"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Dinner -->
+                                    <div class="meal-section mb-4">
+                                        <h6 class="mb-3">
+                                            <i data-feather="moon" class="me-2"></i>
+                                            Abendessen
+                                        </h6>
+                                        <div class="meal-assignment" data-day="{{ i }}" data-meal="dinner">
+                                            <div class="row">
+                                                <div class="col-md-4">
+                                                    <select class="form-select recipe-select" data-day="{{ i }}" data-meal="dinner">
+                                                        <option value="">Rezept wählen...</option>
+                                                        {% for recipe in recipes %}
+                                                        <option value="{{ recipe.id }}">{{ recipe.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <input type="number" class="form-control portions-input" 
+                                                           data-day="{{ i }}" data-meal="dinner"
+                                                           placeholder="Portionen" min="1" max="20" value="2">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <input type="number" class="form-control meals-count-input" 
+                                                           data-day="{{ i }}" data-meal="dinner"
+                                                           placeholder="Für wieviele Mahlzeiten?" min="1" max="10" value="1">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <button type="button" class="btn btn-outline-success btn-sm add-meal-btn"
+                                                            data-day="{{ i }}" data-meal="dinner" onclick="addMeal(this)">
+                                                        <i data-feather="plus"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="planned-meals mt-2" data-day="{{ i }}" data-meal="dinner"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <div class="mt-4">
+                    <button type="button" class="btn btn-outline-secondary me-2" onclick="backToStep1()">
+                        <i data-feather="arrow-left" class="me-2"></i>
+                        Zurück zu Schritt 1
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="saveMealPlan()">
+                        <i data-feather="save" class="me-2"></i>
+                        Wochenplan speichern
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary -->
+{% if planned_meals %}
 <div class="row">
     <div class="col-12">
         <div class="card">
             <div class="card-header">
                 <h5 class="card-title mb-0">
                     <i data-feather="coffee" class="me-2"></i>
-                    Geplante Mahlzeiten ({{ planned_meals|length }})
-                </h5>
-            </div>
-            <div class="card-body">
-                {% if planned_meals %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Datum</th>
-                                    <th>Mahlzeit</th>
-                                    <th>Rezept</th>
-                                    <th>Portionen</th>
-                                    <th>Ort</th>
-                                    <th>Notizen</th>
-                                    <th>Aktionen</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for meal in planned_meals %}
-                                <tr>
-                                    <td>{{ meal.date.strftime('%d.%m.%Y') }}</td>
-                                    <td>
-                                        <span class="badge bg-{% if meal.meal_type == 'breakfast' %}warning{% elif meal.meal_type == 'lunch' %}info{% else %}success{% endif %}">
-                                            {% if meal.meal_type == 'breakfast' %}Frühstück
-                                            {% elif meal.meal_type == 'lunch' %}Mittagessen
-                                            {% else %}Abendessen{% endif %}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <a href="{{ url_for('recipe_detail', recipe_id=meal.recipe_id) }}" 
-                                           class="text-decoration-none">
-                                            {{ meal.recipe_name }}
-                                        </a>
-                                    </td>
-                                    <td>{{ meal.servings }}</td>
-                                    <td>
-                                        <span class="badge bg-secondary">
-                                            {% if meal.location == 'home' %}Zuhause{% else %}Büro{% endif %}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        {% if meal.notes %}
-                                            <small class="text-muted">{{ meal.notes }}</small>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <form method="POST" 
-                                              action="{{ url_for('remove_planned_meal', plan_id=meal_plan.id, meal_index=loop.index0) }}" 
-                                              class="d-inline" 
-                                              onsubmit="return confirm('Mahlzeit wirklich entfernen?')">
-                                            <button type="submit" class="btn btn-outline-danger btn-sm">
-                                                <i data-feather="trash-2"></i>
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <p class="text-muted text-center">
-                        Noch keine Mahlzeiten für diese Woche geplant. Fügen Sie oben eine Mahlzeit hinzu.
-                    </p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Week Calendar View -->
-{% if planned_meals %}
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i data-feather="grid" class="me-2"></i>
-                    Wochenübersicht
+                    Aktuelle Planung ({{ planned_meals|length }} Mahlzeiten)
                 </h5>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-bordered">
+                    <table class="table table-hover">
                         <thead>
                             <tr>
+                                <th>Tag</th>
                                 <th>Mahlzeit</th>
-                                {% for i in range(7) %}
-                                    {% set day_date = meal_plan.week_start_date|add_days(i) %}
-                                    <th class="text-center">
-                                        {{ ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'][day_date.weekday()] }}<br>
-                                        <small>{{ day_date.strftime('%d.%m.') }}</small>
-                                    </th>
-                                {% endfor %}
+                                <th>Rezept</th>
+                                <th>Portionen</th>
+                                <th>Aktionen</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for meal_type in ['breakfast', 'lunch', 'dinner'] %}
+                            {% for meal in planned_meals %}
                             <tr>
-                                <td class="fw-bold">
-                                    {% if meal_type == 'breakfast' %}Frühstück
-                                    {% elif meal_type == 'lunch' %}Mittagessen
-                                    {% else %}Abendessen{% endif %}
+                                <td>{{ meal.date.strftime('%d.%m.%Y') }}</td>
+                                <td>
+                                    <span class="badge bg-{% if meal.meal_type == 'breakfast' %}warning{% elif meal.meal_type == 'lunch' %}info{% else %}success{% endif %}">
+                                        {% if meal.meal_type == 'breakfast' %}Frühstück
+                                        {% elif meal.meal_type == 'lunch' %}Mittagessen
+                                        {% else %}Abendessen{% endif %}
+                                    </span>
                                 </td>
-                                {% for i in range(7) %}
-                                    {% set day_date = meal_plan.week_start_date|add_days(i) %}
-                                    <td class="text-center">
-                                        {% for meal in planned_meals %}
-                                            {% if meal.date == day_date and meal.meal_type == meal_type %}
-                                                <div class="small">
-                                                    <strong>{{ meal.recipe_name }}</strong><br>
-                                                    <span class="text-muted">{{ meal.servings }}P</span>
-                                                    {% if meal.location == 'office' %}
-                                                        <i data-feather="briefcase" class="ms-1" style="width: 12px; height: 12px;"></i>
-                                                    {% endif %}
-                                                </div>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </td>
-                                {% endfor %}
+                                <td>
+                                    <a href="{{ url_for('recipe_detail', recipe_id=meal.recipe_id) }}" 
+                                       class="text-decoration-none">
+                                        {{ meal.recipe_name }}
+                                    </a>
+                                </td>
+                                <td>{{ meal.servings }}</td>
+                                <td>
+                                    <form method="POST" 
+                                          action="{{ url_for('remove_planned_meal', plan_id=meal_plan.id, meal_index=loop.index0) }}" 
+                                          class="d-inline" 
+                                          onsubmit="return confirm('Mahlzeit wirklich entfernen?')">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                                            <i data-feather="trash-2"></i>
+                                        </button>
+                                    </form>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -236,18 +293,237 @@
 {% endif %}
 
 <script>
-// Set default date to today or start of week
-document.addEventListener('DOMContentLoaded', function() {
-    const dateInput = document.getElementById('date');
-    const weekStart = new Date('{{ meal_plan.week_start_date.isoformat() }}');
-    const today = new Date();
+let lunchDays = new Set();
+let weekPlan = {};
+
+// Step 1: Lunch Day Selection
+document.querySelectorAll('.lunch-day-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const day = parseInt(this.dataset.day);
+        if (lunchDays.has(day)) {
+            lunchDays.delete(day);
+            this.classList.remove('btn-primary');
+            this.classList.add('btn-outline-primary');
+        } else {
+            lunchDays.add(day);
+            this.classList.remove('btn-outline-primary');
+            this.classList.add('btn-primary');
+        }
+    });
+});
+
+function proceedToStep2() {
+    document.getElementById('step1').style.display = 'none';
+    document.getElementById('step2').style.display = 'block';
     
-    // Set to today if within the week, otherwise start of week
-    if (today >= weekStart && today <= new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000)) {
-        dateInput.value = today.toISOString().split('T')[0];
-    } else {
-        dateInput.value = weekStart.toISOString().split('T')[0];
+    // Show/hide lunch sections based on selection
+    for (let i = 0; i < 7; i++) {
+        const lunchSection = document.getElementById(`lunchSection${i}`);
+        if (lunchDays.has(i)) {
+            lunchSection.style.display = 'block';
+        } else {
+            lunchSection.style.display = 'none';
+        }
     }
+}
+
+function backToStep1() {
+    document.getElementById('step2').style.display = 'none';
+    document.getElementById('step1').style.display = 'block';
+}
+
+// Step 2: Day Management
+function toggleDay(dayIndex) {
+    const collapse = document.getElementById(`dayCollapse${dayIndex}`);
+    const chevron = document.getElementById(`chevron${dayIndex}`);
+    const checkbox = document.getElementById(`day${dayIndex}_active`);
+    
+    if (collapse.classList.contains('show')) {
+        collapse.classList.remove('show');
+        chevron.setAttribute('data-feather', 'chevron-down');
+    } else {
+        collapse.classList.add('show');
+        chevron.setAttribute('data-feather', 'chevron-up');
+    }
+    feather.replace();
+}
+
+function toggleDayActive(dayIndex) {
+    const checkbox = document.getElementById(`day${dayIndex}_active`);
+    const notHomeDiv = document.getElementById(`dayNotHome${dayIndex}`);
+    const mealsDiv = document.getElementById(`dayMeals${dayIndex}`);
+    
+    if (checkbox.checked) {
+        notHomeDiv.style.display = 'none';
+        mealsDiv.style.display = 'block';
+    } else {
+        notHomeDiv.style.display = 'block';
+        mealsDiv.style.display = 'none';
+    }
+}
+
+// Meal Management
+function addMeal(button) {
+    const day = parseInt(button.dataset.day);
+    const mealType = button.dataset.meal;
+    const recipeSelect = document.querySelector(`select[data-day="${day}"][data-meal="${mealType}"]`);
+    const portionsInput = document.querySelector(`input.portions-input[data-day="${day}"][data-meal="${mealType}"]`);
+    const mealsCountInput = document.querySelector(`input.meals-count-input[data-day="${day}"][data-meal="${mealType}"]`);
+    
+    const recipeId = recipeSelect.value;
+    const recipeName = recipeSelect.selectedOptions[0]?.text;
+    const portions = parseInt(portionsInput.value) || 2;
+    const mealsCount = parseInt(mealsCountInput.value) || 1;
+    
+    if (!recipeId) {
+        alert('Bitte wähle ein Rezept aus.');
+        return;
+    }
+    
+    // Add to visual list
+    const plannedMealsDiv = document.querySelector(`.planned-meals[data-day="${day}"][data-meal="${mealType}"]`);
+    const mealDiv = document.createElement('div');
+    mealDiv.className = 'alert alert-light d-flex justify-content-between align-items-center mb-1';
+    mealDiv.innerHTML = `
+        <span>
+            <strong>${recipeName}</strong> - ${portions} Portionen 
+            ${mealsCount > 1 ? `(für ${mealsCount} Mahlzeiten)` : ''}
+        </span>
+        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeMeal(this)">
+            <i data-feather="x"></i>
+        </button>
+    `;
+    mealDiv.dataset.recipeId = recipeId;
+    mealDiv.dataset.portions = portions;
+    mealDiv.dataset.mealsCount = mealsCount;
+    
+    plannedMealsDiv.appendChild(mealDiv);
+    feather.replace();
+    
+    // Store in plan
+    if (!weekPlan[day]) weekPlan[day] = {};
+    if (!weekPlan[day][mealType]) weekPlan[day][mealType] = [];
+    
+    weekPlan[day][mealType].push({
+        recipeId: recipeId,
+        recipeName: recipeName,
+        portions: portions,
+        mealsCount: mealsCount
+    });
+    
+    // Reset inputs
+    recipeSelect.value = '';
+    portionsInput.value = 2;
+    mealsCountInput.value = 1;
+}
+
+function removeMeal(button) {
+    const mealDiv = button.closest('.alert');
+    const plannedMealsDiv = mealDiv.closest('.planned-meals');
+    const day = parseInt(plannedMealsDiv.dataset.day);
+    const mealType = plannedMealsDiv.dataset.meal;
+    const recipeId = mealDiv.dataset.recipeId;
+    
+    // Remove from plan
+    if (weekPlan[day] && weekPlan[day][mealType]) {
+        weekPlan[day][mealType] = weekPlan[day][mealType].filter(meal => meal.recipeId !== recipeId);
+    }
+    
+    // Remove from DOM
+    mealDiv.remove();
+}
+
+// Save meal plan
+async function saveMealPlan() {
+    const planId = '{{ meal_plan.id }}';
+    const weekStartDate = '{{ meal_plan.week_start_date.isoformat() }}';
+    
+    // Prepare meals for submission
+    const meals = [];
+    
+    for (const [dayIndex, dayPlan] of Object.entries(weekPlan)) {
+        const dayDate = new Date(weekStartDate);
+        dayDate.setDate(dayDate.getDate() + parseInt(dayIndex));
+        
+        for (const [mealType, mealList] of Object.entries(dayPlan)) {
+            for (const meal of mealList) {
+                // For multi-meal recipes, add additional meals for subsequent days
+                for (let i = 0; i < meal.mealsCount; i++) {
+                    const mealDate = new Date(dayDate);
+                    mealDate.setDate(mealDate.getDate() + i);
+                    
+                    meals.push({
+                        recipeId: meal.recipeId,
+                        date: mealDate.toISOString().split('T')[0],
+                        mealType: mealType,
+                        portions: meal.portions,
+                        location: 'home',
+                        notes: i > 0 ? `Reste vom ${dayDate.toLocaleDateString('de-DE')}` : ''
+                    });
+                }
+            }
+        }
+    }
+    
+    // Submit meals
+    for (const meal of meals) {
+        try {
+            const formData = new FormData();
+            formData.append('recipe_id', meal.recipeId);
+            formData.append('date', meal.date);
+            formData.append('meal_type', meal.mealType);
+            formData.append('servings', meal.portions);
+            formData.append('location', meal.location);
+            formData.append('notes', meal.notes);
+            
+            await fetch(`/meal-plans/${planId}/add-meal`, {
+                method: 'POST',
+                body: formData
+            });
+        } catch (error) {
+            console.error('Error saving meal:', error);
+        }
+    }
+    
+    // Reload page to show results
+    window.location.reload();
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    feather.replace();
 });
 </script>
+
+<style>
+.lunch-day-btn {
+    min-width: 120px;
+}
+
+.day-card .card-header:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+}
+
+.meal-section {
+    border-left: 3px solid var(--bs-secondary);
+    padding-left: 1rem;
+}
+
+.meal-assignment .row {
+    align-items: center;
+}
+
+.planned-meals .alert {
+    padding: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.day-chevron {
+    transition: transform 0.2s ease;
+}
+
+.collapse.show + .day-chevron {
+    transform: rotate(180deg);
+}
+</style>
 {% endblock %}
